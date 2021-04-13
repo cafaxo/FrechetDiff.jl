@@ -10,6 +10,6 @@ include("differentiate.jl")
 include("rules.jl")
 include("materialize.jl")
 
-export record_function, differentiate, emit_code
+export record_function, differentiate, emit_code, materialize_hessian
 
 end # module
