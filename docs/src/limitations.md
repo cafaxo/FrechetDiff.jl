@@ -32,11 +32,11 @@ function this_will_work(program, x)
     program_diff = differentiate(program)
     f´ = eval(emit_code(program_diff))
 
-    Base.invokelatest(do_something, f´) # this is works just fine
+    Base.invokelatest(do_something, f´) # this works just fine
 end
 ```
 
-Note that this issue does not arise when using `FrechetDiff` interactively in the Julia REPL as we do in [Examples](@ref).
+Note that this issue does not arise when using **FrechetDiff** interactively in the Julia REPL as we do in [Examples](@ref).
 
 **Why do other automatic differentiation tools not suffer from the same issue?**
 
