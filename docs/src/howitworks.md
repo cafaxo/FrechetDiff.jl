@@ -45,14 +45,14 @@ The task is to create a node for $f_i'(x)v$.
 Denote the computation that happens at the $i$-th node in the sorted list by $g$ such that $f_i(x) = g(f_{j_1}(x), \dots, f_{j_m}(x))$.
 Note that thanks to the way we sorted our list, it holds that $j_1, \dots, j_m < i$.
 
-By chain rule, it holds that
+By the chain rule, it holds that
 ```math
     f_i'(x) v = \sum_{k=1}^m g_k'(f_{j_k}(x)) f_{j_k}'(x) v.
 ```
-Here, $g_k$ denotes $g$ where all except the $k$-th argument are set to $f_{j_1}(x), f_{j_2}(x), \dots$.
-The evaluation of $g_k'$ is implemented via a fixed differentiation rule.
+Here, $g_k$ denotes $g$ where all except the $k$-th argument are fixed to $f_{j_1}(x), f_{j_2}(x), \dots$.
+The evaluation of $g_k'$ is implemented via a predefined differentiation rule.
 
-The definition of such a differentiation rule looks as follows:
+Such a differentiation rule looks as follows:
 ```julia
 diff_rule(::typeof(*), ::Val{1}, x1, x2) = y -> y * x2
 ```
@@ -60,23 +60,24 @@ This describes the derivative of `(x1, x2) -> x1*x2` with respect to the first a
 
 Since $f_{j_k}(x)$ and $f_{j_k}'(x) v$ are already nodes within the computation graph, the application of the differentiation rule is symbolically recorded in a similar way that functions are recorded in the first stage. (With the help of `TrackedValue` objects.)
 
-This recording process usually adds multiple nodes to the graph and then returns the node that represents the result of applied differentiation rules, which is $f_i'(x) h$.
+This recording process usually adds multiple nodes to the graph and then returns the node that represents the result of the applied differentiation rules, which is $f_i'(x) h$.
 This accomplishes the task of creating a node for $f_i'(x)v$.
 
-At the end of all of this, a node for $f_n'(x)v$ is created which concludes the task of computing the derivative.
+At the end the iteration, a node for $f_n'(x)v$ is created which concludes the task of computing the derivative.
 
 ## Code emission
 
-When the user calls `emit_code`, we first eliminate *dead* nodes from the graph that are not required for the computation the returned node.
+When the user calls `emit_code`, we first eliminate *dead* nodes from the graph.
+These are nodes that are not required for the computation the returned node.
 
 Suppose that we have to emit code for a program that was differentiated $n$ times.
-This means that the goal is to emit a Julia function `fn` such that `fn(x)(v1)(v2)...(vn)` corresponds to $f^{(n)}(x)(v_1, \dots, v_n)$.
+This means that the goal is to create a Julia function `fn` such that `fn(x)(v1)(v2)...(vn)` corresponds to $f^{(n)}(x)(v_1, \dots, v_n)$.
 
-To do this, we start by considering the nodes in the graph that only depend on $x$ and not $v_1, \dots v_n$.
+To do this, we start by considering the nodes in the graph that only depend on $x$ and not on $v_1, \dots v_n$.
 We bring these nodes into an *executable* order (a topologically sorted order) and then emit this partial program into `Expr` objects.
 
 Then, we emit the first closure `v1 -> begin ... end`.
-Within this closure, we have available $v_1$ in addition to all previously computed nodes.
+Within this closure, we have available $v_1$ in addition to all previously emitted nodes.
 Now we emit the partial program that depends only on $x$ and $v_1$.
 
 We repeat this process until the last closure `vn -> begin ... end` is emitted.
