@@ -1,6 +1,5 @@
-push!(LOAD_PATH, "../src/")
-
-using Documenter, FrechetDiff
+using FrechetDiff
+using Documenter
 
 makedocs(
     modules = [FrechetDiff],
@@ -17,4 +16,3 @@ makedocs(
 deploydocs(
     repo = "github.com/cafaxo/FrechetDiff.jl.git",
 )
-
