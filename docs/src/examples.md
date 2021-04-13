@@ -96,9 +96,11 @@ as a Hessian matrix.
 First, we compute the second-order derivative:
 
 ```julia-repl
+julia> program = record_function(f, 1);
+
 julia> program_diff1 = differentiate(program);
 
-julia> program_diff2 = differentiate(program);
+julia> program_diff2 = differentiate(program_diff1);
 
 julia> f´´ = eval(emit_code(program_diff2));
 ```
