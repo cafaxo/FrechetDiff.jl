@@ -96,11 +96,11 @@ as a Hessian matrix.
 First, we compute the second-order derivative:
 
 ```julia-repl
-julia> differentiate!(program);
+julia> program_diff1 = differentiate(program);
 
-julia> differentiate!(program);
+julia> program_diff2 = differentiate(program);
 
-julia> f´´ = eval(emit_code(program));
+julia> f´´ = eval(emit_code(program_diff2));
 ```
 
 For efficient computation of the Hessian, **FrechetDiff** offers an experimental `materialize_hessian` routine:
