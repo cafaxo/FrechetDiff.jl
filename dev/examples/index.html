@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Examples · FrechetDiff.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">FrechetDiff.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Introduction</a></li><li class="is-active"><a class="tocitem" href>Examples</a><ul class="internal"><li><a class="tocitem" href="#Introduction"><span>Introduction</span></a></li><li><a class="tocitem" href="#Computing-a-Hessian"><span>Computing a Hessian</span></a></li><li><a class="tocitem" href="#An-example-involving-ApproxFun"><span>An example involving <code>ApproxFun</code></span></a></li></ul></li><li><a class="tocitem" href="../howitworks/">How it works</a></li><li><a class="tocitem" href="../limitations/">Limitations</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Examples</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Examples</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/cafaxo/FrechetDiff.jl/blob/master/docs/src/examples.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h1><h2 id="Introduction"><a class="docs-heading-anchor" href="#Introduction">Introduction</a><a id="Introduction-1"></a><a class="docs-heading-anchor-permalink" href="#Introduction" title="Permalink"></a></h2><p>The <strong>FrechetDiff</strong> package exports the following three methods:</p><ul><li><p><code>record_function(f, i)</code> records a function with <code>i</code> arguments into a <code>Program</code> object (a representation that <strong>FrechetDiff</strong> can differentiate)</p></li><li><p><code>differentiate(program)</code> differentiates a <code>Program</code> object with respect to the first argument of the recorded function</p></li><li><p><code>emit_code(program)</code> converts the <code>Program</code> back into Julia code</p></li></ul><p>To show how <strong>FrechetDiff</strong> is used in practice, we start up a Julia REPL and define a simple function:</p><pre><code class="language-julia-repl">julia&gt; using FrechetDiff
+
+julia&gt; f(x) = x .* circshift(x, 1);</code></pre><p>Next, we create a <code>Program</code> from this function:</p><pre><code class="language-julia-repl">julia&gt; program = record_function(f, 1);
+
+julia&gt; emit_code(program)
+:(s1-&gt;begin
+          s2 = (circshift)(s1, 1)
+          s3 = (Base.Broadcast.broadcasted)(*, s1, s2)
+          s4 = (Base.Broadcast.materialize)(s3)
+          return s4
+      end)</code></pre><p>We differentiate with respect to <code>x</code>:</p><pre><code class="language-julia-repl">julia&gt; program_diff = differentiate(program);
+
+julia&gt; emit_code(program_diff)
+:(s1-&gt;begin
+          s2 = (circshift)(s1, 1)
+          s3-&gt;begin
+                  s4 = (circshift)(s3, 1)
+                  s5 = (Base.Broadcast.broadcasted)(*, s3, s2)
+                  s6 = (Base.Broadcast.materialize)(s5)
+                  s7 = (Base.Broadcast.broadcasted)(*, s1, s4)
+                  s8 = (Base.Broadcast.materialize)(s7)
+                  s9 = (+)(s6, s8)
+                  return s9
+              end
+      end)
+
+julia&gt; f´ = eval(ans);</code></pre><p>We can evaluate the derivative like this:</p><pre><code class="language-julia-repl">julia&gt; f´(rand(6))(rand(6))
+6-element Vector{Float64}:
+ 0.7517604536769744
+ 0.5912242066991258
+ 0.2877951425950339
+ 0.17960873619331497
+ 0.09882525939029835
+ 0.25660723562975296</code></pre><p>To compute the Jacobian matrix at a point, we evaluate the derivative on a set of basis vectors:</p><pre><code class="language-julia-repl">julia&gt; using SparseArrays
+
+julia&gt; hcat(f´(rand(6)).([sparsevec(Dict(i =&gt; 1.0), 6) for i in 1:6])...)
+6×6 SparseMatrixCSC{Float64, Int64} with 12 stored entries:
+ 0.446568   ⋅         ⋅         ⋅         ⋅        0.865412
+ 0.617492  0.865412   ⋅         ⋅         ⋅         ⋅ 
+  ⋅        0.285698  0.617492   ⋅         ⋅         ⋅ 
+  ⋅         ⋅        0.463847  0.285698   ⋅         ⋅ 
+  ⋅         ⋅         ⋅        0.275819  0.463847   ⋅ 
+  ⋅         ⋅         ⋅         ⋅        0.446568  0.275819</code></pre><h2 id="Computing-a-Hessian"><a class="docs-heading-anchor" href="#Computing-a-Hessian">Computing a Hessian</a><a id="Computing-a-Hessian-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-a-Hessian" title="Permalink"></a></h2><p><strong>FrechetDiff</strong> allows us to compute derivatives of any order. In this example, we want to represent the second-order derivative of</p><pre><code class="language-julia-repl">julia&gt; f(x) = x[1] * sum(x .* circshift(x, 1));</code></pre><p>as a Hessian matrix.</p><p>First, we compute the second-order derivative:</p><pre><code class="language-julia-repl">julia&gt; differentiate!(program);
+
+julia&gt; differentiate!(program);
+
+julia&gt; f´´ = eval(emit_code(program));</code></pre><p>For efficient computation of the Hessian, <strong>FrechetDiff</strong> offers an experimental <code>materialize_hessian</code> routine:</p><pre><code class="language-julia-repl">julia&gt; materialize_hessian(f´´, rand(6))
+6×6 Matrix{Float64}:
+ 1.54853   1.73611   0.912468  1.61939   0.534626  2.07346
+ 1.73611   0.0       0.547546  0.0       0.0       0.0
+ 0.912468  0.547546  0.0       0.547546  0.0       0.0
+ 1.61939   0.0       0.547546  0.0       0.547546  0.0
+ 0.534626  0.0       0.0       0.547546  0.0       0.547546
+ 2.07346   0.0       0.0       0.0       0.547546  0.0
+
+julia&gt; @btime materialize_hessian(f´´, rand(10^4));
+  1.068 s (6 allocations: 763.09 MiB)</code></pre><p>This routine uses a non-allocating version of <code>SparseVector</code> for the basis elements (<code>SSparseVector</code>). We consider this routine experimental since the included <code>SSparseVector</code> type currently has very limited functionality. In this example, the materialization requires <code>O(n^2)</code> floating point operations.</p><h2 id="An-example-involving-ApproxFun"><a class="docs-heading-anchor" href="#An-example-involving-ApproxFun">An example involving <code>ApproxFun</code></a><a id="An-example-involving-ApproxFun-1"></a><a class="docs-heading-anchor-permalink" href="#An-example-involving-ApproxFun" title="Permalink"></a></h2><p>Consider the nonlinear operator</p><p class="math-container">\[    A \colon L^2([0,1]) \to \mathbb{R},\quad A(f) := \int_0^1 \sin(f(t)) f&#39;(t)\, \mathrm{d}t\]</p><p>We implement this operator using the <code>ApproxFun</code> package:</p><pre><code class="language-julia-repl">julia&gt; using ApproxFun
+
+julia&gt; A(f) = sum(sin.(f)*f&#39;);
+
+julia&gt; A(Fun(sin, 0..1))
+0.33363325460711935</code></pre><p><strong>FrechetDiff</strong> allows us to compute the derivative of this operator as follows:</p><pre><code class="language-julia-repl">julia&gt; program = record_function(A, 1);
+
+julia&gt; A´ = eval(emit_code(differentiate(program)));
+
+julia&gt; A´(Fun(sin, 0..1))(Fun(t -&gt; t, 0..1))
+0.7456241416655578</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../howitworks/">How it works »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 13 April 2021 16:35">Tuesday 13 April 2021</span>. Using Julia version 1.6.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
