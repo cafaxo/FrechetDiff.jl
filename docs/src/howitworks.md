@@ -58,10 +58,9 @@ diff_rule(::typeof(*), ::Val{1}, x1, x2) = y -> y * x2
 ```
 This describes the derivative of `(x1, x2) -> x1*x2` with respect to the first argument.
 
-Since $f_{j_k}(x)$ and $f_{j_k}'(x) v$ are already nodes within the computation graph, the application of the differentiation rule is symbolically recorded in a similar way that functions are recorded in the first stage. (With the help of `TrackedValue` objects.)
+Since $f_{j_k}(x)$ and $f_{j_k}'(x) v$ are already nodes within the computation graph, the application of the differentiation rule is symbolically recorded in the same way that functions are recorded with `record_function` (using `TrackedValue` objects).
 
-This recording process usually adds multiple nodes to the graph and then returns the node that represents the result of the applied differentiation rules, which is $f_i'(x) h$.
-This accomplishes the task of creating a node for $f_i'(x)v$.
+This recording process usually adds multiple nodes to the graph and then returns the node that represents the result of the applied differentiation rules, which is $f_i'(x) v$.
 
 At the end the iteration, a node for $f_n'(x)v$ is created which concludes the task of computing the derivative.
 
