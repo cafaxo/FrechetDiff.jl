@@ -8,13 +8,13 @@ Base.length(x::SSparseVector) = x.len
 
 +(x::SSparseVector, y::SSparseVector) = SSparseVector((x.nzind..., y.nzind...), (x.nzval..., y.nzval...), x.len)
 
-Base.map(f, x, y::SSparseVector{1}) = SSparseVector(y.nzind, (f(x[y.nzind[1]], y.nzval[1]),), y.len)
+Base.map(::typeof(*), x, y::SSparseVector{1}) = SSparseVector(y.nzind, (x[y.nzind[1]] * y.nzval[1],), y.len)
 
-Base.broadcasted(f, x, y::SSparseVector{1}) = SSparseVector(y.nzind, (f(x[y.nzind[1]], y.nzval[1]),), y.len)
+Base.broadcasted(::typeof(*), x, y::SSparseVector{1}) = SSparseVector(y.nzind, (x[y.nzind[1]] * y.nzval[1],), y.len)
 
-Base.broadcasted(f, x::SSparseVector{1}, y) = SSparseVector(x.nzind, (f(x.nzval[1], y[x.nzind[1]]),), x.len)
+Base.broadcasted(::typeof(*), x::SSparseVector{1}, y) = SSparseVector(x.nzind, (x.nzval[1] * y[x.nzind[1]],), x.len)
 
-Base.broadcasted(f, x::SSparseVector{1}, y::SSparseVector{1}) = SSparseVector(x.nzind, (f(x.nzval[1], y[x.nzind[1]]),), x.len)
+Base.broadcasted(::typeof(*), x::SSparseVector{1}, y::SSparseVector{1}) = SSparseVector(x.nzind, (x.nzval[1] * y[x.nzind[1]],), x.len)
 
 Base.sum(x::SSparseVector) = sum(x.nzval)
 
